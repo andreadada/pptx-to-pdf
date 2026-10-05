@@ -33,6 +33,9 @@ jobs:
       - name: Generate Android project
         run: flutter create . --platforms=android --project-name=pptx_to_pdf --org=com.andreadada
 
+      - name: Install native offline converter
+        run: python3 scripts/install_android_converter.py
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -42,7 +45,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pptx-to-pdf-apk
+          name: pptx-to-pdf-offline-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
