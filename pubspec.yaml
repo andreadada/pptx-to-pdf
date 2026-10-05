@@ -1,7 +1,7 @@
 name: pptx_to_pdf
 description: Convert PowerPoint PPTX files to PDF.
 publish_to: none
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -10,8 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   file_picker: ^10.3.3
-  http: ^1.2.2
-  path_provider: ^2.1.4
   share_plus: ^10.0.2
   open_filex: ^4.5.0
 
