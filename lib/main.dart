@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -31,10 +30,7 @@ class _HomePageState extends State<HomePage> {
   bool busy = false;
   String? error;
 
-  static const apiUrl = String.fromEnvironment(
-    'CONVERTER_API',
-    defaultValue: 'http://10.0.2.2:8080/convert',
-  );
+  static const _native = MethodChannel('com.andreadada.pptx_to_pdf/converter');
 
   Future<void> pick() async {
     final r = await FilePicker.platform.pickFiles(
@@ -52,34 +48,20 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> convert() async {
     if (input?.path == null) return;
-    setState(() {
-      busy = true;
-      error = null;
-    });
+    setState(() { busy = true; error = null; output = null; });
     try {
-      final req = http.MultipartRequest('POST', Uri.parse(apiUrl));
-      req.files.add(await http.MultipartFile.fromPath(
-        'file',
-        input!.path!,
-        filename: input!.name,
-      ));
-      final res = await req.send();
-      if (res.statusCode != 200) {
-        throw Exception('Conversione fallita (${res.statusCode})');
-      }
-      final bytes = await res.stream.toBytes();
-      final dir = await getApplicationDocumentsDirectory();
-      final name = input!.name.replaceFirst(
-        RegExp(r'\.pptx$', caseSensitive: false),
-        '.pdf',
-      );
-      final f = File('${dir.path}/$name');
-      await f.writeAsBytes(bytes, flush: true);
-      setState(() => output = f);
+      final path = await _native.invokeMethod<String>('convertPptxToPdf', {
+        'inputPath': input!.path!,
+        'fileName': input!.name,
+      });
+      if (path == null || path.isEmpty) throw Exception('PDF non generato');
+      setState(() => output = File(path));
+    } on PlatformException catch (e) {
+      setState(() => error = e.message ?? 'Conversione non riuscita');
     } catch (e) {
-      setState(() => error = e.toString());
+      setState(() => error = 'Conversione non riuscita: $e');
     } finally {
-      setState(() => busy = false);
+      if (mounted) setState(() => busy = false);
     }
   }
 
@@ -108,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Seleziona un file .pptx. Il documento viene convertito mantenendo il layout delle slide.',
+                      'Conversione completamente offline: il PowerPoint rimane sul dispositivo.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 28),
